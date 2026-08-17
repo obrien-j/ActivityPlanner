@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { Activity, ScheduledBlock, View, TimeIncrement } from './types'
 import Nav from './components/Nav'
 import ActivitiesView from './components/ActivitiesView'
@@ -22,6 +22,12 @@ export default function App() {
   const [blocks, setBlocks]       = useState<ScheduledBlock[]>(sharedState?.blocks ?? [])
   const [increment, setIncrement] = useState<TimeIncrement>(sharedState?.increment ?? 30)
   const [shareOpen, setShareOpen] = useState(false)
+
+  useEffect(() => {
+    if (sharedState) {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
+    }
+  }, [sharedState])
 
   const addActivity = useCallback((activity: Activity) => {
     setActivities(prev => [...prev, activity])

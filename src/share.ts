@@ -9,6 +9,7 @@ export interface PlannerState {
 
 const MAX_ACTIVITIES = 100
 const MAX_BLOCKS = 64
+const SCHEDULE_DURATION_MINUTES = 16 * 60
 
 function isTimeIncrement(value: unknown): value is TimeIncrement {
   return TIME_INCREMENTS.some(increment => increment === value)
@@ -74,7 +75,7 @@ export function readSharedState(link: string): PlannerState | null {
     const activityIds = new Set(validActivities.map(activity => activity.id))
     if (activityIds.size !== validActivities.length) return null
 
-    const maxSlotIndex = (16 * 60) / increment - 1
+    const maxSlotIndex = SCHEDULE_DURATION_MINUTES / increment - 1
     const usedSlots = new Set<number>()
     const validBlocks = blocks.filter((block): block is ScheduledBlock => {
       const valid = Boolean(
