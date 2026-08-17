@@ -12,7 +12,9 @@ export interface ScheduledBlock {
 }
 
 export type View = 'activities' | 'planner';
-export type TimeIncrement = 15 | 30;
+
+export const TIME_INCREMENTS = [15, 30] as const;
+export type TimeIncrement = typeof TIME_INCREMENTS[number];
 
 export const COLOR_OPTIONS: { label: string; value: string }[] = [
   { label: 'Red',    value: 'bg-red-400'    },
