@@ -1,8 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { Activity, ScheduledBlock, View, TimeIncrement } from './types'
 import Nav from './components/Nav'
 import ActivitiesView from './components/ActivitiesView'
 import PlannerView from './components/PlannerView'
+
+const STORAGE_KEY = 'activity-planner-state'
 
 const INITIAL_ACTIVITIES: Activity[] = [
   { id: 'act-1', name: 'Reading',      emoji: '📚', color: 'bg-blue-400'   },
@@ -12,11 +14,82 @@ const INITIAL_ACTIVITIES: Activity[] = [
   { id: 'act-5', name: 'Nap Time',     emoji: '😴', color: 'bg-indigo-400' },
 ]
 
+interface StoredState {
+  view?: View
+  activities?: Activity[]
+  blocks?: ScheduledBlock[]
+  increment?: TimeIncrement
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function isActivity(value: unknown): value is Activity {
+  return isRecord(value)
+    && typeof value.id === 'string'
+    && typeof value.name === 'string'
+    && typeof value.emoji === 'string'
+    && typeof value.color === 'string'
+}
+
+function isScheduledBlock(value: unknown): value is ScheduledBlock {
+  return isRecord(value)
+    && typeof value.instanceId === 'string'
+    && typeof value.activityId === 'string'
+    && typeof value.slotIndex === 'number'
+}
+
+function isView(value: unknown): value is View {
+  return value === 'activities' || value === 'planner'
+}
+
+function isTimeIncrement(value: unknown): value is TimeIncrement {
+  return value === 15 || value === 30
+}
+
+function loadStoredState(): StoredState {
+  if (typeof window === 'undefined') return {}
+
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY)
+    if (!stored) return {}
+
+    const parsed: unknown = JSON.parse(stored)
+    if (!isRecord(parsed)) return {}
+
+    return {
+      view:       isView(parsed.view) ? parsed.view : undefined,
+      activities: Array.isArray(parsed.activities) && parsed.activities.every(isActivity)
+        ? parsed.activities
+        : undefined,
+      blocks: Array.isArray(parsed.blocks) && parsed.blocks.every(isScheduledBlock)
+        ? parsed.blocks
+        : undefined,
+      increment: isTimeIncrement(parsed.increment) ? parsed.increment : undefined,
+    }
+  } catch {
+    return {}
+  }
+}
+
 export default function App() {
-  const [view, setView]           = useState<View>('planner')
-  const [activities, setActivities] = useState<Activity[]>(INITIAL_ACTIVITIES)
-  const [blocks, setBlocks]       = useState<ScheduledBlock[]>([])
-  const [increment, setIncrement] = useState<TimeIncrement>(30)
+  const [storedState]             = useState(loadStoredState)
+  const [view, setView]           = useState<View>(storedState.view ?? 'planner')
+  const [activities, setActivities] = useState<Activity[]>(storedState.activities ?? INITIAL_ACTIVITIES)
+  const [blocks, setBlocks]       = useState<ScheduledBlock[]>(storedState.blocks ?? [])
+  const [increment, setIncrement] = useState<TimeIncrement>(storedState.increment ?? 30)
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ view, activities, blocks, increment }),
+      )
+    } catch {
+      return
+    }
+  }, [view, activities, blocks, increment])
 
   const addActivity = useCallback((activity: Activity) => {
     setActivities(prev => [...prev, activity])
@@ -86,4 +159,3 @@ export default function App() {
     </div>
   )
 }
-
