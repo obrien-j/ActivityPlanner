@@ -3,6 +3,9 @@ import type { Activity, ScheduledBlock, View, TimeIncrement } from './types'
 import Nav from './components/Nav'
 import ActivitiesView from './components/ActivitiesView'
 import PlannerView from './components/PlannerView'
+import ShareModal from './components/ShareModal'
+import { readSharedState } from './share'
+import type { PlannerState } from './share'
 
 const INITIAL_ACTIVITIES: Activity[] = [
   { id: 'act-1', name: 'Reading',      emoji: '📚', color: 'bg-blue-400'   },
@@ -13,10 +16,12 @@ const INITIAL_ACTIVITIES: Activity[] = [
 ]
 
 export default function App() {
+  const [sharedState] = useState(() => readSharedState(window.location.href))
   const [view, setView]           = useState<View>('planner')
-  const [activities, setActivities] = useState<Activity[]>(INITIAL_ACTIVITIES)
-  const [blocks, setBlocks]       = useState<ScheduledBlock[]>([])
-  const [increment, setIncrement] = useState<TimeIncrement>(30)
+  const [activities, setActivities] = useState<Activity[]>(sharedState?.activities ?? INITIAL_ACTIVITIES)
+  const [blocks, setBlocks]       = useState<ScheduledBlock[]>(sharedState?.blocks ?? [])
+  const [increment, setIncrement] = useState<TimeIncrement>(sharedState?.increment ?? 30)
+  const [shareOpen, setShareOpen] = useState(false)
 
   const addActivity = useCallback((activity: Activity) => {
     setActivities(prev => [...prev, activity])
@@ -61,9 +66,16 @@ export default function App() {
 
   const clearBlocks = useCallback(() => setBlocks([]), [])
 
+  function importState(state: PlannerState) {
+    setActivities(state.activities)
+    setBlocks(state.blocks)
+    setIncrement(state.increment)
+    setView('planner')
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-100 to-purple-100">
-      <Nav view={view} setView={setView} />
+      <Nav view={view} setView={setView} onShare={() => setShareOpen(true)} />
       {view === 'activities' ? (
         <ActivitiesView
           activities={activities}
@@ -83,7 +95,13 @@ export default function App() {
           onClearBlocks={clearBlocks}
         />
       )}
+      {shareOpen && (
+        <ShareModal
+          state={{ activities, blocks, increment }}
+          onImport={importState}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
     </div>
   )
 }
-
