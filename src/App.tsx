@@ -4,6 +4,9 @@ import type { Activity, ScheduledBlock, View, TimeIncrement } from './types'
 import Nav from './components/Nav'
 import ActivitiesView from './components/ActivitiesView'
 import PlannerView from './components/PlannerView'
+import ShareModal from './components/ShareModal'
+import { readSharedState } from './share'
+import type { PlannerState } from './share'
 
 const STORAGE_KEY = 'activity-planner-state'
 
@@ -81,7 +84,16 @@ function loadStoredState(): StoredState {
   }
 }
 
-function getInitialState(): AppState {
+function getInitialState(sharedState: PlannerState | null): AppState {
+  if (sharedState) {
+    return {
+      view:       'planner',
+      activities: sharedState.activities,
+      blocks:     sharedState.blocks,
+      increment:  sharedState.increment,
+    }
+  }
+
   const storedState = loadStoredState()
   return {
     view:       storedState.view ?? 'planner',
@@ -92,7 +104,15 @@ function getInitialState(): AppState {
 }
 
 export default function App() {
-  const [{ view, activities, blocks, increment }, setAppState] = useState<AppState>(getInitialState)
+  const [sharedState] = useState(() => readSharedState(window.location.href))
+  const [{ view, activities, blocks, increment }, setAppState] = useState<AppState>(() => getInitialState(sharedState))
+  const [shareOpen, setShareOpen] = useState(false)
+
+  useEffect(() => {
+    if (sharedState) {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
+    }
+  }, [sharedState])
 
   useEffect(() => {
     try {
@@ -175,9 +195,19 @@ export default function App() {
     setAppState(prev => ({ ...prev, blocks: [] }))
   }, [])
 
+  function importState(state: PlannerState) {
+    setAppState(prev => ({
+      ...prev,
+      view: 'planner',
+      activities: state.activities,
+      blocks: state.blocks,
+      increment: state.increment,
+    }))
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-100 to-purple-100">
-      <Nav view={view} setView={setView} />
+      <Nav view={view} setView={setView} onShare={() => setShareOpen(true)} />
       {view === 'activities' ? (
         <ActivitiesView
           activities={activities}
@@ -195,6 +225,13 @@ export default function App() {
           onMoveBlock={moveBlock}
           onRemoveBlock={removeBlock}
           onClearBlocks={clearBlocks}
+        />
+      )}
+      {shareOpen && (
+        <ShareModal
+          state={{ activities, blocks, increment }}
+          onImport={importState}
+          onClose={() => setShareOpen(false)}
         />
       )}
     </div>
