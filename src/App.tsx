@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { TIME_INCREMENTS } from './types'
 import type { Activity, ScheduledBlock, View, TimeIncrement } from './types'
 import Nav from './components/Nav'
@@ -75,16 +75,14 @@ function loadStoredState(): StoredState {
 }
 
 export default function App() {
-  const storedState = useRef<StoredState | null>(null)
-  if (storedState.current === null) {
-    storedState.current = loadStoredState()
-  }
-
-  const initialState              = storedState.current
-  const [view, setView]           = useState<View>(initialState.view ?? 'planner')
-  const [activities, setActivities] = useState<Activity[]>(initialState.activities ?? INITIAL_ACTIVITIES)
-  const [blocks, setBlocks]       = useState<ScheduledBlock[]>(initialState.blocks ?? [])
-  const [increment, setIncrement] = useState<TimeIncrement>(initialState.increment ?? 30)
+  const [view, setView]           = useState<View>(() => loadStoredState().view ?? 'planner')
+  const [activities, setActivities] = useState<Activity[]>(() => (
+    loadStoredState().activities ?? INITIAL_ACTIVITIES
+  ))
+  const [blocks, setBlocks]       = useState<ScheduledBlock[]>(() => loadStoredState().blocks ?? [])
+  const [increment, setIncrement] = useState<TimeIncrement>(() => (
+    loadStoredState().increment ?? 30
+  ))
 
   useEffect(() => {
     try {
@@ -93,7 +91,6 @@ export default function App() {
         JSON.stringify({ view, activities, blocks, increment }),
       )
     } catch {
-      return
     }
   }, [view, activities, blocks, increment])
 
