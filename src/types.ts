@@ -12,6 +12,7 @@ export interface ScheduledBlock {
 }
 
 export type View = 'activities' | 'planner';
+
 export const TIME_INCREMENTS = [15, 30] as const;
 export type TimeIncrement = typeof TIME_INCREMENTS[number];
 
