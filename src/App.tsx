@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { TIME_INCREMENTS } from './types'
 import type { Activity, ScheduledBlock, View, TimeIncrement } from './types'
 import Nav from './components/Nav'
 import ActivitiesView from './components/ActivitiesView'
@@ -45,7 +46,7 @@ function isView(value: unknown): value is View {
 }
 
 function isTimeIncrement(value: unknown): value is TimeIncrement {
-  return value === 15 || value === 30
+  return typeof value === 'number' && TIME_INCREMENTS.includes(value as TimeIncrement)
 }
 
 function loadStoredState(): StoredState {
@@ -74,11 +75,16 @@ function loadStoredState(): StoredState {
 }
 
 export default function App() {
-  const [storedState]             = useState(loadStoredState)
-  const [view, setView]           = useState<View>(storedState.view ?? 'planner')
-  const [activities, setActivities] = useState<Activity[]>(storedState.activities ?? INITIAL_ACTIVITIES)
-  const [blocks, setBlocks]       = useState<ScheduledBlock[]>(storedState.blocks ?? [])
-  const [increment, setIncrement] = useState<TimeIncrement>(storedState.increment ?? 30)
+  const storedState = useRef<StoredState | null>(null)
+  if (storedState.current === null) {
+    storedState.current = loadStoredState()
+  }
+
+  const initialState              = storedState.current
+  const [view, setView]           = useState<View>(initialState.view ?? 'planner')
+  const [activities, setActivities] = useState<Activity[]>(initialState.activities ?? INITIAL_ACTIVITIES)
+  const [blocks, setBlocks]       = useState<ScheduledBlock[]>(initialState.blocks ?? [])
+  const [increment, setIncrement] = useState<TimeIncrement>(initialState.increment ?? 30)
 
   useEffect(() => {
     try {

@@ -9,6 +9,7 @@ import {
   useDroppable,
 } from '@dnd-kit/core'
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
+import { TIME_INCREMENTS } from '../types'
 import type { Activity, ScheduledBlock, TimeIncrement } from '../types'
 import TimeSlot from './TimeSlot'
 import ActivityPoolItem from './ActivityPoolItem'
@@ -155,7 +156,7 @@ export default function PlannerView({
             <div className="flex items-center gap-3">
               <span className="text-sm font-semibold text-gray-500 hidden sm:block">Blocks:</span>
               <div className="flex rounded-full overflow-hidden border-2 border-purple-300">
-                {([15, 30] as TimeIncrement[]).map(val => (
+                {TIME_INCREMENTS.map(val => (
                   <button
                     key={val}
                     type="button"
