@@ -100,7 +100,10 @@ export default function App() {
         STORAGE_KEY,
         JSON.stringify({ view, activities, blocks, increment }),
       )
-    } catch {
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.warn('Unable to save planner state.', error)
+      }
     }
   }, [view, activities, blocks, increment])
 
