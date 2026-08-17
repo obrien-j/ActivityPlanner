@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { PlannerState } from '../share'
 import { createShareLink, readSharedState } from '../share'
 
@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function ShareModal({ state, onImport, onClose }: Props) {
-  const shareLink = createShareLink(state)
+  const shareLink = useMemo(() => createShareLink(state), [state])
   const [importLink, setImportLink] = useState('')
   const [message, setMessage] = useState('')
 

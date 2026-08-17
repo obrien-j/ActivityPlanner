@@ -1,3 +1,4 @@
+import { TIME_INCREMENTS } from './types'
 import type { Activity, ScheduledBlock, TimeIncrement } from './types'
 
 export interface PlannerState {
@@ -8,6 +9,10 @@ export interface PlannerState {
 
 const MAX_ACTIVITIES = 100
 const MAX_BLOCKS = 64
+
+function isTimeIncrement(value: unknown): value is TimeIncrement {
+  return TIME_INCREMENTS.some(increment => increment === value)
+}
 
 function toBase64Url(value: string) {
   const bytes = new TextEncoder().encode(value)
@@ -22,7 +27,8 @@ function fromBase64Url(value: string) {
   if (!/^[A-Za-z0-9_-]+$/.test(value)) return null
 
   try {
-    const base64 = value.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(value.length / 4) * 4, '=')
+    const base64NoPadding = value.replace(/-/g, '+').replace(/_/g, '/')
+    const base64 = base64NoPadding.padEnd(Math.ceil(base64NoPadding.length / 4) * 4, '=')
     const binary = atob(base64)
     const bytes = Uint8Array.from(binary, char => char.charCodeAt(0))
     return new TextDecoder().decode(bytes)
@@ -51,7 +57,7 @@ export function readSharedState(link: string): PlannerState | null {
     const parsed: unknown = JSON.parse(decoded)
     if (!parsed || typeof parsed !== 'object') return null
     const { activities, blocks, increment } = parsed as Partial<PlannerState>
-    if ((increment !== 15 && increment !== 30) || !Array.isArray(activities) || !Array.isArray(blocks)) return null
+    if (!isTimeIncrement(increment) || !Array.isArray(activities) || !Array.isArray(blocks)) return null
     if (activities.length > MAX_ACTIVITIES || blocks.length > MAX_BLOCKS) return null
 
     const validActivities = activities.filter((activity): activity is Activity =>
