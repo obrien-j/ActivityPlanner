@@ -104,12 +104,12 @@ export default function App() {
     }
   }, [view, activities, blocks, increment])
 
-  const setView = useCallback((view: View) => {
-    setAppState(prev => ({ ...prev, view }))
+  const setView = useCallback((newView: View) => {
+    setAppState(prev => ({ ...prev, view: newView }))
   }, [])
 
-  const setIncrement = useCallback((increment: TimeIncrement) => {
-    setAppState(prev => ({ ...prev, increment }))
+  const setIncrement = useCallback((newIncrement: TimeIncrement) => {
+    setAppState(prev => ({ ...prev, increment: newIncrement }))
   }, [])
 
   const addActivity = useCallback((activity: Activity) => {
