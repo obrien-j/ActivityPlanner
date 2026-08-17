@@ -74,14 +74,21 @@ function loadStoredState(): StoredState {
   }
 }
 
+let storedStateCache: StoredState | undefined
+
+function getStoredState(): StoredState {
+  storedStateCache ??= loadStoredState()
+  return storedStateCache
+}
+
 export default function App() {
-  const [view, setView]           = useState<View>(() => loadStoredState().view ?? 'planner')
+  const [view, setView]           = useState<View>(() => getStoredState().view ?? 'planner')
   const [activities, setActivities] = useState<Activity[]>(() => (
-    loadStoredState().activities ?? INITIAL_ACTIVITIES
+    getStoredState().activities ?? INITIAL_ACTIVITIES
   ))
-  const [blocks, setBlocks]       = useState<ScheduledBlock[]>(() => loadStoredState().blocks ?? [])
+  const [blocks, setBlocks]       = useState<ScheduledBlock[]>(() => getStoredState().blocks ?? [])
   const [increment, setIncrement] = useState<TimeIncrement>(() => (
-    loadStoredState().increment ?? 30
+    getStoredState().increment ?? 30
   ))
 
   useEffect(() => {
