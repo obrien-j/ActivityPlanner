@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { TIME_INCREMENTS } from './types'
 import type { Activity, ScheduledBlock, View, TimeIncrement } from './types'
 import Nav from './components/Nav'
@@ -74,22 +74,12 @@ function loadStoredState(): StoredState {
   }
 }
 
-let storedStateCache: StoredState | undefined
-
-function getStoredState(): StoredState {
-  storedStateCache ??= loadStoredState()
-  return storedStateCache
-}
-
 export default function App() {
-  const [view, setView]           = useState<View>(() => getStoredState().view ?? 'planner')
-  const [activities, setActivities] = useState<Activity[]>(() => (
-    getStoredState().activities ?? INITIAL_ACTIVITIES
-  ))
-  const [blocks, setBlocks]       = useState<ScheduledBlock[]>(() => getStoredState().blocks ?? [])
-  const [increment, setIncrement] = useState<TimeIncrement>(() => (
-    getStoredState().increment ?? 30
-  ))
+  const storedState               = useMemo(loadStoredState, [])
+  const [view, setView]           = useState<View>(storedState.view ?? 'planner')
+  const [activities, setActivities] = useState<Activity[]>(storedState.activities ?? INITIAL_ACTIVITIES)
+  const [blocks, setBlocks]       = useState<ScheduledBlock[]>(storedState.blocks ?? [])
+  const [increment, setIncrement] = useState<TimeIncrement>(storedState.increment ?? 30)
 
   useEffect(() => {
     try {
