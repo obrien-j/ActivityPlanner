@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { TIME_INCREMENTS } from './types'
 import type { Activity, ScheduledBlock, View, TimeIncrement } from './types'
 import Nav from './components/Nav'
@@ -20,6 +20,13 @@ interface StoredState {
   activities?: Activity[]
   blocks?: ScheduledBlock[]
   increment?: TimeIncrement
+}
+
+interface AppState {
+  view: View
+  activities: Activity[]
+  blocks: ScheduledBlock[]
+  increment: TimeIncrement
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -74,12 +81,18 @@ function loadStoredState(): StoredState {
   }
 }
 
+function getInitialState(): AppState {
+  const storedState = loadStoredState()
+  return {
+    view:       storedState.view ?? 'planner',
+    activities: storedState.activities ?? INITIAL_ACTIVITIES,
+    blocks:     storedState.blocks ?? [],
+    increment:  storedState.increment ?? 30,
+  }
+}
+
 export default function App() {
-  const storedState               = useMemo(loadStoredState, [])
-  const [view, setView]           = useState<View>(storedState.view ?? 'planner')
-  const [activities, setActivities] = useState<Activity[]>(storedState.activities ?? INITIAL_ACTIVITIES)
-  const [blocks, setBlocks]       = useState<ScheduledBlock[]>(storedState.blocks ?? [])
-  const [increment, setIncrement] = useState<TimeIncrement>(storedState.increment ?? 30)
+  const [{ view, activities, blocks, increment }, setAppState] = useState<AppState>(getInitialState)
 
   useEffect(() => {
     try {
@@ -91,48 +104,73 @@ export default function App() {
     }
   }, [view, activities, blocks, increment])
 
+  const setView = useCallback((view: View) => {
+    setAppState(prev => ({ ...prev, view }))
+  }, [])
+
+  const setIncrement = useCallback((increment: TimeIncrement) => {
+    setAppState(prev => ({ ...prev, increment }))
+  }, [])
+
   const addActivity = useCallback((activity: Activity) => {
-    setActivities(prev => [...prev, activity])
+    setAppState(prev => ({ ...prev, activities: [...prev.activities, activity] }))
   }, [])
 
   const updateActivity = useCallback((updated: Activity) => {
-    setActivities(prev => prev.map(a => (a.id === updated.id ? updated : a)))
+    setAppState(prev => ({
+      ...prev,
+      activities: prev.activities.map(a => (a.id === updated.id ? updated : a)),
+    }))
   }, [])
 
   const deleteActivity = useCallback((id: string) => {
-    setActivities(prev => prev.filter(a => a.id !== id))
-    setBlocks(prev => prev.filter(b => b.activityId !== id))
+    setAppState(prev => ({
+      ...prev,
+      activities: prev.activities.filter(a => a.id !== id),
+      blocks:     prev.blocks.filter(b => b.activityId !== id),
+    }))
   }, [])
 
   const addBlock = useCallback((activityId: string, slotIndex: number) => {
-    setBlocks(prev => {
-      const without = prev.filter(b => b.slotIndex !== slotIndex)
-      return [
-        ...without,
-        { instanceId: `${activityId}-${slotIndex}-${Date.now()}`, activityId, slotIndex },
-      ]
+    setAppState(prev => {
+      const without = prev.blocks.filter(b => b.slotIndex !== slotIndex)
+      return {
+        ...prev,
+        blocks: [
+          ...without,
+          { instanceId: `${activityId}-${slotIndex}-${Date.now()}`, activityId, slotIndex },
+        ],
+      }
     })
   }, [])
 
   const moveBlock = useCallback((instanceId: string, newSlotIndex: number) => {
-    setBlocks(prev => {
-      const block = prev.find(b => b.instanceId === instanceId)
+    setAppState(prev => {
+      const block = prev.blocks.find(b => b.instanceId === instanceId)
       if (!block) return prev
-      const without = prev.filter(
+      const without = prev.blocks.filter(
         b => b.slotIndex !== newSlotIndex && b.instanceId !== instanceId,
       )
-      return [
-        ...without,
-        { ...block, slotIndex: newSlotIndex, instanceId: `${block.activityId}-${newSlotIndex}-${Date.now()}` },
-      ]
+      return {
+        ...prev,
+        blocks: [
+          ...without,
+          { ...block, slotIndex: newSlotIndex, instanceId: `${block.activityId}-${newSlotIndex}-${Date.now()}` },
+        ],
+      }
     })
   }, [])
 
   const removeBlock = useCallback((instanceId: string) => {
-    setBlocks(prev => prev.filter(b => b.instanceId !== instanceId))
+    setAppState(prev => ({
+      ...prev,
+      blocks: prev.blocks.filter(b => b.instanceId !== instanceId),
+    }))
   }, [])
 
-  const clearBlocks = useCallback(() => setBlocks([]), [])
+  const clearBlocks = useCallback(() => {
+    setAppState(prev => ({ ...prev, blocks: [] }))
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-100 to-purple-100">
